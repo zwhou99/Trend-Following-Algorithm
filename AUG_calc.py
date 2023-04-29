@@ -166,10 +166,10 @@ def compute_positions(HH, LL, bHH, sLL, sellShorts, buyLongs, High, Low, Open, C
     return E, trades, position, longtrades, shorttrades, pnl, pnl_rate, trade_bars
 
 
-# Loop through years from 1 to 9
-for y in range(1, 10):
+# Loop through years from 1 to 2
+for y in range(1, 3):
     # Generate the filename for the Excel file for y years and 3 months
-    filename = "PL_24500/PL_find_%dy_%dm.xlsx" % (y, 3)
+    filename = "AUG_74000/AUG_find_%dy_%dm.xlsx" % (y, 1)
     print(filename)
 
     # Load the Excel workbook and select the first sheet
@@ -184,10 +184,10 @@ for y in range(1, 10):
     # Sort the data based on the first column in descending order
     data.sort(key=lambda x: x[0], reverse=True)
 
-    # Loop through months from 6 to 15 with a step of 3
-    for m in range(6, 15, 3):
+    # Loop through months from 1 to 3
+    for m in range(2, 4):
         # Generate the filename for the Excel file for y years and m months
-        filename2 = "PL_24500/PL_find_%dy_%dm.xlsx" % (y, m)
+        filename2 = "AUG_74000/AUG_find_%dy_%dm.xlsx" % (y, m)
 
         # Load the Excel workbook and select the first sheet
         wb = openpyxl.load_workbook(filename2)
@@ -195,7 +195,7 @@ for y in range(1, 10):
 
         # Initialize a new list for storing the modified data
         data2 = []
-        j = m // 3
+        j = m
         # Loop through the data, and select specific rows based on the variable j
         for i in range(j - 1, len(data), j):
             data2.append((data[i][0], data[i][1], data[i][2], data[i - j + 1][3], data[i][4], data[i][5], data[i][6],
@@ -215,23 +215,24 @@ for y in range(1, 10):
         # Save the workbook
         wb.save(filename2)
 
+
 # Set print options for NumPy arrays to suppress scientific notation
 np.set_printoptions(suppress=True)
 
 # Load data from a CSV file and preprocess it
-data_file = 'PL-5min.csv'
+data_file = 'AUG-5min.csv'
 df = pd.read_csv(data_file)
 df.Date = pd.to_datetime(df.Date)
 df['Datetime'] = pd.to_datetime(df['Date'].astype(str) + ' ' + df['Time'].astype(str))
 
 # Initialize an array to store the profit-to-drawdown ratios for different year-month combinations
-ratios = np.zeros((9, 4))
+ratios = np.zeros((2, 3))
 
-# Loop through years from 1 to 9 and months from 3 to 15 with a step of 3
-for year in range(1, 10):
-    for month in range(3, 15, 3):
+# Loop through years from 1 to 2 and months from 1 to 3
+for year in range(1, 3):
+    for month in range(1, 4):
         # Read and sort data from an Excel file
-        filename = "PL_24500/PL_find_%dy_%dm.xlsx" % (year, month)
+        filename = "AUG_74000/AUG_find_%dy_%dm.xlsx" % (year, month)
         wb = openpyxl.load_workbook(filename)
         ws = wb[wb.sheetnames[0]]
         data = []
@@ -240,10 +241,10 @@ for year in range(1, 10):
         data.sort(key=lambda x: x[0])
 
         # Initialize variables for trading
-        E0 = 100000
+        E0 = 500000
         bars_back = 10001
-        slpg = 148
-        PV = 50
+        slpg = 70
+        PV = 1000
         N = len(df)
         df["E"] = np.zeros(N) + E0
         num_trades = 0
@@ -275,6 +276,7 @@ for year in range(1, 10):
                                           df.buyLong.values, df.High.values, df.Low.values, df.Open.values,
                                           df.Close.values, L, S, start, end, bars_back, PV, slpg, df.E.values, 0)
 
+
             df.E = E
             num_trades += round(longtrade + shorttrade)
             long_trades += longtrade
@@ -291,7 +293,7 @@ for year in range(1, 10):
         profit = df.E[end-1] - df.E[0]
         maxdrawdown = abs(min(df.DD[0: end]))
         avgdrawdown = df.DD[start: end].mean()
-        ratios[(year-1), (month//3-1)] = profit / maxdrawdown
+        ratios[(year-1), (month-1)] = profit / maxdrawdown
 
         df['E_diff'] = df['E'].diff()
         bar_pnl = np.array(df.E_diff[start:end])
@@ -317,14 +319,14 @@ for year in range(1, 10):
         avg_ror = pnl_rates.mean()
         avg_std = pnl_rates.std()
 
-        period_pnl = np.array(df.E.diff(57)[end:start:-57])
+        period_pnl = np.array(df.E.diff(72)[end:start:-72])
         positive_period_pnl = period_pnl[period_pnl > 0]
         negative_period_pnl = period_pnl[period_pnl < 0]
         positive_period_pnl_sum = positive_period_pnl.sum()
         negative_period_pnl_sum = negative_period_pnl.sum()
 
         # Print performance metrics
-        print("Time Series: PL/PL-5min.csv")
+        print("Time Series: AUG/AUG-5min.csv")
         print("In Sample: %d years" % year)
         print("Out of Sample: %d months" % month)
         print("----------------------")
@@ -370,27 +372,4 @@ for year in range(1, 10):
         print()
         print()
         print()
-
-
-
-
-
-
-
-
-
-
-
-
-"""start = df.Date.searchsorted(data[0][2], side='left')
-
-df['Datetime'] = pd.to_datetime(df['Date'].astype(str) + ' ' + df['Time'].astype(str))
-df.iloc[start:, :].plot(x='Datetime', y='E', figsize=(12, 6))
-#df.iloc[start:, :].plot(x='Datetime', y='Close', figsize=(12, 6))
-#df.iloc[start:, :].E.plot(label="equity")
-plt.xlabel('Datetime')
-plt.ylabel('Equity')
-plt.title('PL Equity over Time')
-plt.show()
-print(df.E[:end])
-print()"""
+        
