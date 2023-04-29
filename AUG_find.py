@@ -23,38 +23,17 @@ args = parser.parse_args()
 id = args.id
 
 # Calculate year and month based on id value
-month = 3
-if id < 58:
+month = 1
+if id < 47:
     year = 1
-elif id < 112:
-    id -= 58
+elif id < 82:
+    id -= 47
     year = 2
-elif id < 162:
-    id -= 112
-    year = 3
-elif id < 208:
-    id -= 162
-    year = 4
-elif id < 250:
-    id -= 208
-    year = 5
-elif id < 288:
-    id -= 250
-    year = 6
-elif id < 322:
-    id -= 288
-    year = 7
-elif id < 352:
-    id -= 322
-    year = 8
-elif id < 378:
-    id -= 352
-    year = 9
 
 
 # Define Ls and Ss lists for calculations
-Ls = list(range(100, 1000, 200))
-Ss = list(range(20, 100, 20))
+Ls = list(range(100, 1000, 100))
+Ss = list(range(15, 105, 15))
 
 # Initialize an array to store ratios
 ratios = np.empty((1001, 101))
@@ -68,17 +47,17 @@ argmax = [-1, -1]
 
 
 # Variables initialization
-data_file = 'PL-5min.csv'
-end = pd.to_datetime("04/06/2023") - pd.tseries.offsets.DateOffset(years=year, months=month)
-times_start = pd.date_range(end, "10/03/2007", freq=str(-month) + 'M').sort_values() + \
-              pd.tseries.offsets.DateOffset(days=7) - pd.tseries.offsets.DateOffset(months=1)
+data_file = 'AUG-5min.csv'
+end = pd.to_datetime("04/21/2023") - pd.tseries.offsets.DateOffset(years=year, months=month)
+times_start = pd.date_range(end, "05/04/2018", freq=str(-month) + 'M').sort_values() + \
+              pd.tseries.offsets.DateOffset(days=22) - pd.tseries.offsets.DateOffset(months=1)
 times_end = times_start + pd.tseries.offsets.DateOffset(years=year, days=-1)
 
 # Set constants for calculations
 bars_back = 10001
-slpg = 148
-PV = 50
-E0 = 100000
+slpg = 70
+PV = 1000
+E0 = 500000
 
 
 # Read data from CSV file and convert date column to datetime
@@ -152,16 +131,14 @@ for i in range(len(Ls) * len(Ss)):
             if cont:
                 L = L + dL
                 S = S + dS
-
-        # Update the best performance ratio if needed
         if curmax > allmax:
             allmax = curmax
             argmax = [L, S]
 
 
 # Fine-tune the search for the best ratio by exploring the neighborhood of the best ratio found so far
-for L in range(max(50, argmax[0]-25), min(1000, argmax[0]+26)):
-    for S in range(max(4, argmax[1]-5), min(100, argmax[1]+6)):
+for L in range(max(50, argmax[0]-15), min(1000, argmax[0]+16)):
+    for S in range(max(4, argmax[1]-4), min(100, argmax[1]+5)):
         if np.isnan(ratios[L, S]):
             ratio, profit, maxdrawdown = getratio(df, L, S, start, end, bars_back, PV, slpg, E0)
             ratios[L, S] = ratio
@@ -180,7 +157,7 @@ print("maxdrawdown: %.2f" % maxdrawdown)
 
 
 # Define the output filename
-filename = "PL_find_%dy_%dm.xlsx" % (year, month)
+filename = "AUG_find_%dy_%dm.xlsx" % (year, month)
 
 
 # Lock the file for exclusive access
